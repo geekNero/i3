@@ -2242,6 +2242,29 @@ static void con_on_remove_child(Con *con) {
     if (children == 0) {
         DLOG("Container empty, closing\n");
         tree_close_internal(con, DONT_KILL_WINDOW, false);
+    } else if (children == 1) {
+        DLOG("Container has 1 child, pulling it up\n");
+        Con *child = TAILQ_FIRST(&(con->nodes_head));
+        Con *parent = con->parent;
+
+        /* 1: save focus */
+        bool con_was_focused = (TAILQ_FIRST(&(parent->focus_head)) == con);
+
+        /* 2: detach child and re-attach to parent */
+        con_detach(child);
+        child->parent = parent;
+        TAILQ_INSERT_BEFORE(con, child, nodes);
+        TAILQ_INSERT_TAIL(&(parent->focus_head), child, focused);
+        child->percent = con->percent;
+
+        /* 3: restore focus */
+        if (con_was_focused) {
+            TAILQ_REMOVE(&(parent->focus_head), child, focused);
+            TAILQ_INSERT_HEAD(&(parent->focus_head), child, focused);
+        }
+
+        /* 4: close the redundant con */
+        tree_close_internal(con, DONT_KILL_WINDOW, false);
     }
 }
 
