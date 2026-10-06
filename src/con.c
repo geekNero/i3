@@ -1510,10 +1510,20 @@ bool con_move_to_target(Con *con, Con *target) {
         return true;
     }
 
-    if (target->type == CT_WORKSPACE && con_is_leaf(target)) {
-        DLOG("target container is an empty workspace, simply moving the container there.\n");
-        con_move_to_workspace(con, target, true, false, false);
-        return true;
+    if (target->type == CT_WORKSPACE) {
+        if (con_is_leaf(target)) {
+            DLOG("target container is an empty workspace, simply moving the container there.\n");
+            con_move_to_workspace(con, target, true, false, false);
+            return true;
+        } else {
+            DLOG("target is a marked workspace, making it the rightmost immediate child.\n");
+            _con_move_to_con(con, target, true, true, false, false, true);
+
+            Con *actual_parent = con->parent;
+            TAILQ_REMOVE(&(actual_parent->nodes_head), con, nodes);
+            TAILQ_INSERT_TAIL(&(actual_parent->nodes_head), con, nodes);
+            return true;
+        }
     }
 
     /* For split containers, we use the currently focused container within it.
@@ -1575,8 +1585,11 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
         return;
     }
 
-    Con *target = con_descend_focused(workspace);
-    _con_move_to_con(con, target, true, fix_coordinates, dont_warp, ignore_focus, true);
+    _con_move_to_con(con, workspace, true, fix_coordinates, dont_warp, ignore_focus, true);
+
+    Con *actual_parent = con->parent;
+    TAILQ_REMOVE(&(actual_parent->nodes_head), con, nodes);
+    TAILQ_INSERT_HEAD(&(actual_parent->nodes_head), con, nodes);
 }
 
 /*
