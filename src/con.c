@@ -1519,9 +1519,11 @@ bool con_move_to_target(Con *con, Con *target) {
             DLOG("target is a marked workspace, making it the rightmost immediate child.\n");
             _con_move_to_con(con, target, true, true, false, false, true);
 
-            Con *actual_parent = con->parent;
-            TAILQ_REMOVE(&(actual_parent->nodes_head), con, nodes);
-            TAILQ_INSERT_TAIL(&(actual_parent->nodes_head), con, nodes);
+            if (con->type != CT_FLOATING_CON && !con_is_floating(con)) {
+                Con *actual_parent = con->parent;
+                TAILQ_REMOVE(&(actual_parent->nodes_head), con, nodes);
+                TAILQ_INSERT_TAIL(&(actual_parent->nodes_head), con, nodes);
+            }
             return true;
         }
     }
@@ -1587,9 +1589,11 @@ void con_move_to_workspace(Con *con, Con *workspace, bool fix_coordinates, bool 
 
     _con_move_to_con(con, workspace, true, fix_coordinates, dont_warp, ignore_focus, true);
 
-    Con *actual_parent = con->parent;
-    TAILQ_REMOVE(&(actual_parent->nodes_head), con, nodes);
-    TAILQ_INSERT_HEAD(&(actual_parent->nodes_head), con, nodes);
+    if (con->type != CT_FLOATING_CON && !con_is_floating(con)) {
+        Con *actual_parent = con->parent;
+        TAILQ_REMOVE(&(actual_parent->nodes_head), con, nodes);
+        TAILQ_INSERT_HEAD(&(actual_parent->nodes_head), con, nodes);
+    }
 }
 
 /*
